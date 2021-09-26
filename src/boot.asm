@@ -8,8 +8,12 @@ _main:
   mov ah,0h
   mov al,0x03
   int 0x10
-  call load_sector
+  call load_sector ;call function named load_sector
+  call enable_a20
   call detect_memory
+
+
+jmp $ ;make infinity loop for main function 
 
 ;load kernel
 load_sector:
@@ -24,13 +28,24 @@ mov es,0x7e00
 int 13h
 ret
 
+;check if a20 is supported,if yes turned it on 
+enable_a20:
+mov ax,2403h
+int 15h
+cmp ah,0
+jz .is_supported
+ret
+.is_supported:
+mov ax,2401h
+int 15h
+ret
+
+
 detect_memory: ;should detect and save low and upper memory
 clc
 int 12h
 mov dword [low_memory],ax
-   
-
-jmp $
+ret   
 
 
 low_memory dw 0 ;stores amount of low memory in KB
