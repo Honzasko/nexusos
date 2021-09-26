@@ -1,55 +1,68 @@
+;
+; Fixed boot.asm for NASM
+;
+; Date: 26-09-2021
+;
+
 bits 16
-[org 0x7c00]
+org 0x7c00
 
-global _main
+main:
+cli
+xor ax, ax ; mov ax, cs
+mov es, ax
+mov ds, ax
+mov ss, ax
+mov sp, ax ; 32 KiB (0x08000 - 0x0fffe)
+cld ; clear the direction flag
+;mov byte [drive_number], dl ; store drive number
+sti
 
-;main function of bootloader
-_main: 
-  mov ah,0h
-  mov al,0x03
-  int 0x10
-  call load_sector ;call function named load_sector
-  call enable_a20
-  call detect_memory
+;mov ax, 0x0003
+;int 0x10 ; BIOS - Set video mode 0x03
 
+mov si, ls2_msg
+call print_string
 
-jmp $ ;make infinity loop for main function 
+mov ax, 0x0201
+mov cx, 0x0002
+xor dh, dh
+;mov dl, byte [drive_number]
+mov bx, 0x7e00
+;stc
+int 13h ; BIOS - Read the second sector from the boot media (buffer address: 0x0000:0x7e00)
+jc .error
+jmp 0x7e00
 
-;load kernel
-load_sector:
-mov ah,02h
-mov al,1
-mov ch,0
-mov cl,1
-mov dh,0
-mov dl,80h
-mov bh,0
-mov es,0x7e00
-int 13h
+.error:
+mov si, error_msg
+call print_string
+jmp $
+
+;drive_number db 0x00
+ls2_msg db "Loading stage 2... ", 0x00
+error_msg db "Error", 0x00
+
+print_string:
+;push ax
+;push bx
+;push si
+
+mov ah, 0x0e
+xor bh, bh
+
+.print_char:
+lodsb
+or al, al
+jz .return
+int 0x10
+jmp .print_char
+
+.return:
+;pop si
+;pop bx
+;pop ax
 ret
 
-;check if a20 is supported,if yes turned it on 
-enable_a20:
-mov ax,2403h
-int 15h
-cmp ah,0
-jz .is_supported
-ret
-.is_supported:
-mov ax,2401h
-int 15h
-ret
-
-
-detect_memory: ;should detect and save low and upper memory
-clc
-int 12h
-mov dword [low_memory],ax
-ret   
-
-
-low_memory dw 0 ;stores amount of low memory in KB
-upper_memory dw 0
-
-times 510-($-$$) db 0
+times 0x01fe-($-$$) db 0x00
 dw 0xaa55
