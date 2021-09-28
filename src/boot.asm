@@ -44,7 +44,7 @@ ret
 detect_memory: ;should detect and save low and upper memory
 clc
 int 12h
-mov dword [low_memory],ax
+mov word [low_memory],ax
 ret   
 
 
