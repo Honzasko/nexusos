@@ -45,11 +45,16 @@ detect_memory: ;should detect and save low and upper memory
 clc
 int 12h
 mov word [low_memory],ax
+mov ax,E801h
+int 15h
+mov word [upper_memory],ax
+mov word [upper_memory_high],bx
 ret   
 
 
-low_memory dw 0 ;stores amount of low memory in KB
-upper_memory dw 0
+low_memory dw 0 ;stores amount of low memory in KiB
+upper_memory dw 0 ;store amount of upper memory in KiB before 16.MiB   
+upper_memory_high dw 0 ;store size of memory after 16.MiB in 64KiB blocks
 
 times 510-($-$$) db 0
 dw 0xaa55
